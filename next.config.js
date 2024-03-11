@@ -1,16 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // images: {
-  //   domains: [
-  //     "images.unsplash.com",
-  //     "storage.googleapis.com",
-  //     "firebasestorage.googleapis.com",
-  //     "cdn.shopify.com",
-  //     "upload.wikimedia.org",
-  //     "www.medxpharmacy.com",
-  //     "gympower.co.uk",
-  //   ],
-  // },
   images: {
     remotePatterns: [
       {

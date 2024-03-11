@@ -161,7 +161,17 @@ function MakeCheckout({
         {selectedPaymentMethod == "cash" ? null : (
           <PaymentElement
             options={{
-              wallets: { applePay: "auto", googlePay: "never" },
+              wallets: { applePay: "auto", googlePay: "auto" },
+              fields: {
+                billingDetails: "auto",
+              },
+              terms: {
+                applePay: "always",
+                googlePay: "always",
+              },
+              layout: {
+                type: "accordion",
+              },
             }}
           />
         )}

@@ -550,15 +550,14 @@ function CheckoutPage() {
                 <p className="font-bold">
                   Please enter all the required fields to continue to payment.
                 </p>
-                {/* {ValidateAddressError(addressToDeliver).map((e, i) => {
-                return <p className="mb-2 text-red-500">* {e}</p>
-              })} */}
               </div>
             ) : (
               <Elements
                 stripe={stripePromise}
                 options={{
                   mode: "payment",
+                  loader: "auto",
+
                   amount:
                     Math.round(
                       isCashBackUsed
@@ -566,6 +565,7 @@ function CheckoutPage() {
                             currRate
                         : paymentSummary?.totalPayable * currRate
                     ) * 100,
+
                   currency: currency.toLowerCase(),
                 }}
               >
