@@ -557,7 +557,8 @@ function CheckoutPage() {
                 options={{
                   mode: "payment",
                   loader: "auto",
-
+                  capture_method: "automatic",
+                  payment_method_types: ["card", "link"],
                   amount:
                     Math.round(
                       isCashBackUsed
