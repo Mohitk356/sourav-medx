@@ -1,6 +1,7 @@
 import { CircularProgress } from "@mui/material";
 import {
   Elements,
+  LinkAuthenticationElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -26,7 +27,7 @@ export interface User {
   email: string;
 }
 
-interface MakeCheckoutProps {
+export interface MakeCheckoutProps {
   handleSubmit: Function;
   setIsTermsAgreed: React.Dispatch<React.SetStateAction<boolean>>;
   userNote: string;
@@ -57,85 +58,82 @@ function MakeCheckout({
   setLoading,
   state,
 }: MakeCheckoutProps) {
-  const stripe = useStripe();
-  const elements = useElements();
-
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const handleSubmitPay = async (id) => {
-    if (elements == null) {
-      return;
-    }
+  // const handleSubmitPay = async (id) => {
+  //   // if (elements == null) {
+  //   //   return;
+  //   // }
 
-    // Trigger form validation and wallet collection
-    const { error: submitError } = await elements.submit();
-    if (submitError) {
-      // Show error to your customer
-      toast.error(submitError.message + " on submit");
-      return;
-    }
+  //   // Trigger form validation and wallet collection
+  //   const { error: submitError } = await elements.submit();
+  //   if (submitError) {
+  //     // Show error to your customer
+  //     toast.error(submitError.message + " on submit");
+  //     return;
+  //   }
 
-    let amount: number;
-    if (
-      stripeData?.currency === "OMR" ||
-      stripeData?.currency === "KWD" ||
-      stripeData?.currency === "BHD"
-    ) {
-      amount = makeLeastSignificantDigitZero(
-        parseFloat((stripeData?.amount).toFixed(2)) * 1000
-      );
-    } else {
-      amount = parseInt(
-        (parseFloat((stripeData?.amount).toFixed(2)) * 100)
-          .toString()
-          .split(".")[0]
-      );
-    }
-    // Create the PaymentIntent and obtain clientSecret from your server endpoint
-    setLoading(true);
-    const res = await fetch(
-      process.env.NEXT_PUBLIC_API_DOMAIN + "/api/stripe-intent",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          ...stripeData,
-          amount,
-        }),
-        headers: {
-          "content-type": "application/json",
-        },
-      }
-    );
+  //   let amount: number;
+  //   if (
+  //     stripeData?.currency === "OMR" ||
+  //     stripeData?.currency === "KWD" ||
+  //     stripeData?.currency === "BHD"
+  //   ) {
+  //     amount = makeLeastSignificantDigitZero(
+  //       parseFloat((stripeData?.amount).toFixed(2)) * 1000
+  //     );
+  //   } else {
+  //     amount = parseInt(
+  //       (parseFloat((stripeData?.amount).toFixed(2)) * 100)
+  //         .toString()
+  //         .split(".")[0]
+  //     );
+  //   }
+  //   // Create the PaymentIntent and obtain clientSecret from your server endpoint
+  //   setLoading(true);
+  //   const res = await fetch(
+  //     process.env.NEXT_PUBLIC_API_DOMAIN + "/api/stripe-intent",
+  //     {
+  //       method: "POST",
+  //       body: JSON.stringify({
+  //         ...stripeData,
+  //         amount,
+  //       }),
+  //       headers: {
+  //         "content-type": "application/json",
+  //       },
+  //     }
+  //   );
 
-    const data = await res?.json();
-    console.log(data);
+  //   const data = await res?.json();
+  //   console.log(data);
 
-    const clientSecret = data.clientSecret;
+  //   const clientSecret = data.clientSecret;
 
-    const { error } = await stripe.confirmPayment({
-      //`Elements` instance that was used to create the Payment Element
-      elements,
-      clientSecret,
-      confirmParams: {
-        return_url: process.env.NEXT_PUBLIC_API_DOMAIN + `/api/stripe/${id}`,
-      },
-    });
-    // /${id}/complete/${clientSecret}
-    if (error) {
-      toast.error("Payment Rejected");
-      // router.push("/payment-failed");
-      window.location.replace(
-        process.env.NEXT_PUBLIC_API_DOMAIN +
-          `/api/stripe/error/${id}?payment_intent=${data.id}`
-      );
-      console.log(error);
-    } else {
-      // Your customer will be redirected to your `return_url`. For some payment
-      // methods like iDEAL, your customer will be redirected to an intermediate
-      // site first to authorize the payment, then redirected to the `return_url`.\
-      setLoading(false);
-    }
-  };
+  //   const { error } = await stripe.confirmPayment({
+  //     //`Elements` instance that was used to create the Payment Element
+  //     elements,
+  //     clientSecret,
+  //     confirmParams: {
+  //       return_url: process.env.NEXT_PUBLIC_API_DOMAIN + `/api/stripe/${id}`,
+  //     },
+  //   });
+  //   // /${id}/complete/${clientSecret}
+  //   if (error) {
+  //     toast.error("Payment Rejected");
+  //     // router.push("/payment-failed");
+  //     window.location.replace(
+  //       process.env.NEXT_PUBLIC_API_DOMAIN +
+  //         `/api/stripe/error/${id}?payment_intent=${data.id}`
+  //     );
+  //     console.log(error);
+  //   } else {
+  //     // Your customer will be redirected to your `return_url`. For some payment
+  //     // methods like iDEAL, your customer will be redirected to an intermediate
+  //     // site first to authorize the payment, then redirected to the `return_url`.\
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleNoteChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUserNote(e.target.value);
@@ -158,23 +156,7 @@ function MakeCheckout({
             className="w-full rounded-md select-none outline-none py-2 px-3"
           />
         </div>
-        {selectedPaymentMethod == "cash" ? null : (
-          <PaymentElement
-            options={{
-              wallets: { applePay: "auto", googlePay: "auto" },
-              fields: {
-                billingDetails: "auto",
-              },
-              terms: {
-                applePay: "always",
-                googlePay: "always",
-              },
-              layout: {
-                type: "accordion",
-              },
-            }}
-          />
-        )}
+
         <div className="w-full flex gap-2 items-center justify-between">
           <div className="flex gap-2">
             <input
@@ -223,7 +205,7 @@ function MakeCheckout({
             } else {
               const id = await handleSubmit(false);
               if (id) {
-                handleSubmitPay(id);
+                // handleSubmitPay(id);
               }
             }
           }}

@@ -16,6 +16,7 @@ import {
   checkIfProductQuanityIsAvailable,
   getCountry,
   initialAddress,
+  makeLeastSignificantDigitZero,
   validateEmail,
 } from "../../utils/utilities";
 import { useAppSelector } from "../../redux/hooks";
@@ -34,9 +35,22 @@ import { useDispatch } from "react-redux";
 import { reset } from "../../redux/slices/cartSlice";
 import { loadStripe } from "@stripe/stripe-js";
 import axios from "axios";
-import { Elements } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 import { StripeElementsOptions } from "@stripe/stripe-js";
 import { ValidateAddressError } from "../../utils/validate/AdddressError";
+export interface PayState {
+  pay: boolean;
+  secret: string | null;
+  orderId: string | null;
+  payment_intent: string | null;
+}
+
+import PaymentBox from "./PaymentBox";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC);
 function CheckoutPage() {
   const { data: allowedCountries } = useQuery({
@@ -60,7 +74,12 @@ function CheckoutPage() {
   const cart = useAppSelector((state: any) => state.cartReducer.cart);
   const router = useRouter();
   const dispatch = useDispatch();
-
+  const [showPay, setShowPay] = useState<PayState>({
+    pay: false,
+    secret: null,
+    orderId: null,
+    payment_intent: null,
+  });
   const [isCashBackUsed, setIsCashbackUsed] = useState(false);
   const [cashBackUsed, setCashBackused] = useState(0);
   const [saveAddress, setSaveAddress] = useState(false);
@@ -262,6 +281,98 @@ function CheckoutPage() {
     }
   }, [addressToDeliver?.state]);
 
+  const onClientSecretSubmit = async (id) => {
+    // if (elements == null) {
+    //   return;
+    // }
+
+    // // Trigger form validation and wallet collection
+    // const { error: submitError } = await elements.submit();
+    // if (submitError) {
+    //   // Show error to your customer
+    //   toast.error(submitError.message + " on submit");
+    //   return;
+    // }
+
+    const stripeData = {
+      amount: Math.round(
+        isCashBackUsed
+          ? (paymentSummary?.totalPayable - cashBackUsed) * currRate
+          : paymentSummary?.totalPayable * currRate
+      ),
+      currency: currency.toLowerCase(),
+      user: {
+        address: addressToDeliver,
+        name: addressToDeliver?.name,
+        phone: addressToDeliver?.phoneNo,
+        email: addressToDeliver?.email,
+      },
+    };
+
+    let amount: number;
+    if (
+      stripeData?.currency === "OMR" ||
+      stripeData?.currency === "KWD" ||
+      stripeData?.currency === "BHD"
+    ) {
+      amount = makeLeastSignificantDigitZero(
+        parseFloat((stripeData?.amount).toFixed(2)) * 1000
+      );
+    } else {
+      amount = parseInt(
+        (parseFloat((stripeData?.amount).toFixed(2)) * 100)
+          .toString()
+          .split(".")[0]
+      );
+    }
+    // Create the PaymentIntent and obtain clientSecret from your server endpoint
+    setLoading(true);
+    const res = await fetch(
+      process.env.NEXT_PUBLIC_API_DOMAIN + "/api/stripe-intent",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...stripeData,
+          amount,
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+      }
+    );
+
+    const data = await res?.json();
+    console.log(data);
+
+    const clientSecret = data.clientSecret;
+    setShowPay({ ...showPay, secret: clientSecret, pay: true, orderId: id });
+    setLoading(false);
+    // alert(id);
+    // const { error } = await stripe.confirmPayment({
+    //   //`Elements` instance that was used to create the Payment Element
+    //   elements,
+    //   clientSecret,
+    //   confirmParams: {
+    //     return_url: process.env.NEXT_PUBLIC_API_DOMAIN + `/api/stripe/${id}`,
+    //   },
+    // });
+    // // /${id}/complete/${clientSecret}
+    // if (error) {
+    //   toast.error("Payment Rejected");
+    //   // router.push("/payment-failed");
+    //   window.location.replace(
+    //     process.env.NEXT_PUBLIC_API_DOMAIN +
+    //       `/api/stripe/error/${id}?payment_intent=${data.id}`
+    //   );
+    //   console.log(error);
+    // } else {
+    //   // Your customer will be redirected to your `return_url`. For some payment
+    //   // methods like iDEAL, your customer will be redirected to an intermediate
+    //   // site first to authorize the payment, then redirected to the `return_url`.\
+    //   setLoading(false);
+    // }
+  };
+
   function checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry() {
     let response = false;
     if (paymentSummary) {
@@ -284,7 +395,7 @@ function CheckoutPage() {
 
     if (!isTermsAgreed) {
       toast.error(
-        "Please Agree to Terms & Conditions before placing your order"
+        "Please Agree to` p-3 rounded-lg w-full font-bold text-white mt-10` Terms & Conditions before placing your order"
       );
       return;
     }
@@ -303,7 +414,7 @@ function CheckoutPage() {
       toast.error("Invalid Email ID");
       return;
     }
-    if (/^[0-9]{3,14}$/.test(phoneNo) === false) {
+    if (/^[0-9PayState]{3,14}$/.test(phoneNo) === false) {
       // alert(phoneNo);
       toast.error("Enter valid phone number without country code.");
       return;
@@ -442,7 +553,10 @@ function CheckoutPage() {
     } else {
       setLoading(false);
 
-      return orderId;
+      // return orderId;
+      setShowPay({ ...showPay, orderId: orderId });
+
+      onClientSecretSubmit(orderId);
     }
   }
 
@@ -552,60 +666,94 @@ function CheckoutPage() {
                 </p>
               </div>
             ) : (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  mode: "payment",
-                  loader: "auto",
-                  capture_method: "automatic",
-                  payment_method_types: ["card", "link"],
-                  amount:
-                    Math.round(
-                      isCashBackUsed
-                        ? (paymentSummary?.totalPayable - cashBackUsed) *
-                            currRate
-                        : paymentSummary?.totalPayable * currRate
-                    ) * 100,
-
+              <MakeCheckout
+                stripeData={{
+                  amount: Math.round(
+                    isCashBackUsed
+                      ? (paymentSummary?.totalPayable - cashBackUsed) * currRate
+                      : paymentSummary?.totalPayable * currRate
+                  ),
                   currency: currency.toLowerCase(),
+                  user: {
+                    address: addressToDeliver,
+                    name: addressToDeliver?.name,
+                    phone: addressToDeliver?.phoneNo,
+                    email: addressToDeliver?.email,
+                  },
                 }}
-              >
-                <MakeCheckout
-                  stripeData={{
-                    amount: Math.round(
-                      isCashBackUsed
-                        ? (paymentSummary?.totalPayable - cashBackUsed) *
-                            currRate
-                        : paymentSummary?.totalPayable * currRate
-                    ),
-                    currency: currency.toLowerCase(),
-                    user: {
-                      address: addressToDeliver,
-                      name: addressToDeliver?.name,
-                      phone: addressToDeliver?.phoneNo,
-                      email: addressToDeliver?.email,
-                    },
-                  }}
-                  state={addressToDeliver.state}
-                  userNote={userNote}
-                  checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry={
-                    checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry
-                  }
-                  handleSubmit={(cod) => placeOrder(cod)}
-                  isTermsAgreed={isTermsAgreed}
-                  selectedPaymentMethod={selectedPaymentMethod}
-                  loading={loading}
-                  setLoading={setLoading}
-                  setIsTermsAgreed={setIsTermsAgreed}
-                  setUserNote={setUserNote}
-                  isCashBackUsed={isCashBackUsed}
-                  setSelectedPaymentMethod={setSelectedPaymentMethod}
-                />
-              </Elements>
+                state={addressToDeliver.state}
+                userNote={userNote}
+                checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry={
+                  checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry
+                }
+                handleSubmit={(cod) => placeOrder(cod)}
+                isTermsAgreed={isTermsAgreed}
+                selectedPaymentMethod={selectedPaymentMethod}
+                loading={loading}
+                setLoading={setLoading}
+                setIsTermsAgreed={setIsTermsAgreed}
+                setUserNote={setUserNote}
+                isCashBackUsed={isCashBackUsed}
+                setSelectedPaymentMethod={setSelectedPaymentMethod}
+              />
             )
           ) : null}
         </div>
       </div>
+      {showPay.pay && showPay.secret != null ? (
+        <Elements
+          stripe={stripePromise}
+          options={{
+            clientSecret: showPay.secret,
+            // mode: "payment",
+            // loader: "auto",
+            // capture_method: "automatic",
+            // payment_method_types: ["card"],
+            // amount:
+            //   Math.round(
+            //     isCashBackUsed
+            //       ? (paymentSummary?.totalPayable - cashBackUsed) * currRate
+            //       : paymentSummary?.totalPayable * currRate
+            //   ) * 100,
+
+            // currency: currency.toLowerCase(),
+          }}
+        >
+          <PaymentBox
+            showPay={showPay}
+            paymentState={setShowPay}
+            stripeData={{
+              amount: Math.round(
+                isCashBackUsed
+                  ? (paymentSummary?.totalPayable - cashBackUsed) * currRate
+                  : paymentSummary?.totalPayable * currRate
+              ),
+
+              currency: currency.toLowerCase(),
+              user: {
+                address: addressToDeliver,
+                name: addressToDeliver?.name,
+                phone: addressToDeliver?.phoneNo,
+                email: addressToDeliver?.email,
+              },
+            }}
+            state={addressToDeliver.state}
+            userNote={userNote}
+            checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry={
+              checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry
+            }
+            handleSubmit={(cod) => placeOrder(cod)}
+            isTermsAgreed={isTermsAgreed}
+            selectedPaymentMethod={selectedPaymentMethod}
+            loading={loading}
+            setLoading={setLoading}
+            setIsTermsAgreed={setIsTermsAgreed}
+            setUserNote={setUserNote}
+            isCashBackUsed={isCashBackUsed}
+            setSelectedPaymentMethod={setSelectedPaymentMethod}
+          />
+        </Elements>
+      ) : null}
     </div>
   );
 }
