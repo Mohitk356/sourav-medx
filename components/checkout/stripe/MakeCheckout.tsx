@@ -58,8 +58,6 @@ function MakeCheckout({
   setLoading,
   state,
 }: MakeCheckoutProps) {
-  const [errorMessage, setErrorMessage] = useState(null);
-
   // const handleSubmitPay = async (id) => {
   //   // if (elements == null) {
   //   //   return;
@@ -204,9 +202,6 @@ function MakeCheckout({
               handleSubmit(true);
             } else {
               const id = await handleSubmit(false);
-              if (id) {
-                // handleSubmitPay(id);
-              }
             }
           }}
           className={`w-full text-white py-1 md:py-2 px-1 md:px-2 hover:bg-[#df191e]  cursor-pointer  border border-[#ed1c24] ${

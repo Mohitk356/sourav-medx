@@ -7,6 +7,7 @@ import { db } from "../../config/firebase-config";
 import { useAppSelector } from "../../redux/hooks";
 
 const PaymentSuccess = ({ searchParams }) => {
+  const stripe = require("stripe")(process.env.NEXT_PUBLIC_STRIPE_SECRET);
   const [dataPushed, setDataPushed] = useState(false);
   const { currRate, currency } = useAppSelector(
     (state: any) => state.appReducer
@@ -37,6 +38,14 @@ const PaymentSuccess = ({ searchParams }) => {
   async function updateRecord() {
     if (searchParams?.redirect_status === "succeeded") {
       if (searchParams?.orderId) {
+        const order = await getDoc(doc(db, "orders", searchParams?.orderId));
+        const data = order.data();
+        const paymentIntent = await stripe.paymentIntents.update(
+          searchParams.paymentId,
+          {
+            description: `Medx Pharmacy - OrderId: ${data.orderId}`,
+          }
+        );
         await updateDoc(doc(db, "orders", searchParams?.orderId), {
           status: "Confirmed",
           "payment.completed": true,

@@ -135,11 +135,7 @@ function PaymentBox({
         return;
       }
 
-      if (
-        showPay.orderId == null ||
-        showPay.payment_intent == null ||
-        showPay.secret == null
-      ) {
+      if (showPay.orderId == null || showPay.payment_intent == null) {
         console.log(showPay);
 
         toast.error("Please Try Again Payment Not Detected!");

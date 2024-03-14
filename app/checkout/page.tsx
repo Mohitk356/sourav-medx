@@ -345,7 +345,13 @@ function CheckoutPage() {
     console.log(data);
 
     const clientSecret = data.clientSecret;
-    setShowPay({ ...showPay, secret: clientSecret, pay: true, orderId: id });
+    setShowPay({
+      ...showPay,
+      secret: clientSecret,
+      pay: true,
+      orderId: id,
+      payment_intent: data.id,
+    });
     setLoading(false);
     // alert(id);
     // const { error } = await stripe.confirmPayment({
@@ -390,7 +396,7 @@ function CheckoutPage() {
     return response;
   }
 
-  async function placeOrder(isCod: boolean) {
+  async function placeNewOrder(isCod: boolean) {
     // const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC);
 
     if (!isTermsAgreed) {
@@ -515,8 +521,8 @@ function CheckoutPage() {
       await addAddressToUser({ ...addressToDeliver, createdAt: new Date() });
     }
 
-    orderId = (await addDoc(collection(db, "orders"), orderObj)).id;
     if (isCod) {
+      orderId = (await addDoc(collection(db, "orders"), orderObj)).id;
       toast.success("Order Placed Successfully");
       setLoading(false);
       dispatch(reset());
@@ -551,8 +557,8 @@ function CheckoutPage() {
       router.push(`/payment-success/?orderId=${orderId}&mode=cash`);
       return orderId;
     } else {
+      orderId = (await addDoc(collection(db, "tmpOrders"), orderObj)).id;
       setLoading(false);
-
       // return orderId;
       setShowPay({ ...showPay, orderId: orderId });
 
@@ -686,7 +692,7 @@ function CheckoutPage() {
                 checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry={
                   checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry
                 }
-                handleSubmit={(cod) => placeOrder(cod)}
+                handleSubmit={(cod) => placeNewOrder(cod)}
                 isTermsAgreed={isTermsAgreed}
                 selectedPaymentMethod={selectedPaymentMethod}
                 loading={loading}
@@ -742,7 +748,7 @@ function CheckoutPage() {
             checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry={
               checkIfThereIsAnyProductWhichIsNotDeliverableToSelectedCountry
             }
-            handleSubmit={(cod) => placeOrder(cod)}
+            handleSubmit={(cod) => placeNewOrder(cod)}
             isTermsAgreed={isTermsAgreed}
             selectedPaymentMethod={selectedPaymentMethod}
             loading={loading}
