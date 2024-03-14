@@ -395,7 +395,7 @@ function CheckoutPage() {
 
     if (!isTermsAgreed) {
       toast.error(
-        "Please Agree to` p-3 rounded-lg w-full font-bold text-white mt-10` Terms & Conditions before placing your order"
+        "Please Agree to Terms & Conditions before placing your order"
       );
       return;
     }

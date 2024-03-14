@@ -35,6 +35,9 @@ function PaymentBox({
   const elements = useElements();
   const [loadingPay, setLoadingPay] = useState<boolean>(false);
   const onClientSecretSubmit = async () => {
+    if (loadingPay) {
+      return false;
+    }
     // if (elements == null) {
     //   return;
     // }
