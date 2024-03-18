@@ -13,27 +13,6 @@ const PaymentSuccess = ({ searchParams }) => {
     (state: any) => state.appReducer
   );
   // const
-  async function pushDataLayer() {
-    const orderData = (
-      await getDoc(doc(db, "orders", searchParams?.orderId))
-    ).data();
-    TagManager.dataLayer({
-      dataLayer: {
-        event: "Order Placed",
-        value: (orderData?.totalAmountToPaid * currRate).toFixed(2),
-        tax: (orderData?.defaultGst * currRate).toFixed(2),
-        shipping: (orderData?.delivery * currRate).toFixed(2),
-        currency: orderData?.currency,
-      },
-    });
-  }
-
-  function createButton() {
-    const button = document.createElement("button");
-    button.onclick = pushDataLayer;
-    console.log(" CLICKing");
-    button.click();
-  }
 
   async function updateRecord() {
     if (searchParams?.redirect_status === "succeeded") {
@@ -46,6 +25,15 @@ const PaymentSuccess = ({ searchParams }) => {
             description: `Medx Pharmacy - OrderId: ${data.orderId}`,
           }
         );
+        TagManager.dataLayer({
+          dataLayer: {
+            event: "purchase",
+            value: (data?.totalAmountToPaid * currRate).toFixed(2),
+            tax: (data?.defaultGst * currRate).toFixed(2),
+            shipping: (data?.delivery * currRate).toFixed(2),
+            currency: data?.currency,
+          },
+        });
         await updateDoc(doc(db, "orders", searchParams?.orderId), {
           status: "Confirmed",
           "payment.completed": true,
@@ -58,12 +46,6 @@ const PaymentSuccess = ({ searchParams }) => {
     setDataPushed(true);
     // createButton();
   }
-
-  useEffect(() => {
-    if (dataPushed) {
-      createButton();
-    }
-  }, [dataPushed]);
 
   useEffect(() => {
     updateRecord();
