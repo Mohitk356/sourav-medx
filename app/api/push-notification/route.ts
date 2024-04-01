@@ -1,7 +1,22 @@
 import admin from "firebase-admin";
 import { NextResponse } from "next/server";
 import fbData from "../admin.json";
-export const GET = async () => {
+export async function OPTIONS(request: Request) {
+  const allowedOrigin = request.headers.get("origin");
+  const response = new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": allowedOrigin || "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+
+  return response;
+}
+export const POST = async () => {
   if (admin.app.length == 0) {
     admin.initializeApp({
       credential: admin.credential.cert({
