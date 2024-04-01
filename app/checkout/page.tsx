@@ -679,7 +679,9 @@ function CheckoutPage() {
                       ? (paymentSummary?.totalPayable - cashBackUsed) * currRate
                       : paymentSummary?.totalPayable * currRate
                   ),
+
                   currency: currency.toLowerCase(),
+
                   user: {
                     address: addressToDeliver,
                     name: addressToDeliver?.name,
