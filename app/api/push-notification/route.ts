@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import { NextResponse } from "next/server";
-import fbData from "../admin.json";
+import fbData from "../../../admin.json";
+
 export async function OPTIONS(request: Request) {
   const allowedOrigin = request.headers.get("origin");
   const response = new NextResponse(null, {
@@ -16,6 +17,7 @@ export async function OPTIONS(request: Request) {
 
   return response;
 }
+
 export const POST = async () => {
   if (admin.app.length == 0) {
     admin.initializeApp({
