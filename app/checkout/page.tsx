@@ -310,10 +310,11 @@ function CheckoutPage() {
     };
 
     let amount: number;
+
     if (
-      stripeData?.currency === "OMR" ||
-      stripeData?.currency === "KWD" ||
-      stripeData?.currency === "BHD"
+      stripeData?.currency.trim().toString() === "omr" ||
+      stripeData?.currency.trim().toString() === "kwd" ||
+      stripeData?.currency.trim().toString() === "bhd"
     ) {
       amount = makeLeastSignificantDigitZero(
         parseFloat((stripeData?.amount).toFixed(2)) * 1000
@@ -325,6 +326,7 @@ function CheckoutPage() {
           .split(".")[0]
       );
     }
+
     // Create the PaymentIntent and obtain clientSecret from your server endpoint
     setLoading(true);
     const res = await fetch(
