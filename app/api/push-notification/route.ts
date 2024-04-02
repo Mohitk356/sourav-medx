@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import fbData from "../../../admin.json";
 
 export async function OPTIONS(request: Request) {
@@ -18,8 +18,10 @@ export async function OPTIONS(request: Request) {
   return response;
 }
 
-export const POST = async () => {
-  if (admin.app.length == 0) {
+export const POST = async (req: NextRequest) => {
+  var reqData = await req.json();
+
+  try {
     admin.initializeApp({
       credential: admin.credential.cert({
         clientEmail: fbData.client_email,
@@ -27,8 +29,9 @@ export const POST = async () => {
         projectId: fbData.project_id,
       }),
     });
+  } catch (error) {
+    console.log(error);
   }
-
   try {
     const fireStore = admin.firestore();
     const doc: admin.firestore.DocumentSnapshot<
@@ -41,15 +44,21 @@ export const POST = async () => {
 
     const data = await admin.messaging().sendEachForMulticast({
       notification: {
-        title: "Title of your notification",
-        body: "Body of your notification",
+        title: reqData.title || "",
+        body: reqData.body || "",
       },
       tokens: ids,
       webpush: {
         notification: {
-          title: "Title of your notification",
-          body: "Body of your notification",
+          title: reqData.title || "",
+          body: reqData.body || "",
         },
+      },
+      data: {
+        title: reqData.title || "",
+        body: reqData.body || "",
+        slug: reqData.slug || "",
+        image: reqData.image || "",
       },
     });
     console.log(data);
