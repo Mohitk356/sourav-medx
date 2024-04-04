@@ -19,12 +19,26 @@ const PaymentSuccess = ({ searchParams }) => {
       if (searchParams?.orderId) {
         const order = await getDoc(doc(db, "orders", searchParams?.orderId));
         const data = order.data();
-        const paymentIntent = await stripe.paymentIntents.update(
-          searchParams.paymentId,
-          {
-            description: `Medx Pharmacy - OrderId: ${data.orderId}`,
-          }
-        );
+
+        try {
+          stripe.paymentIntents
+            .update(searchParams.paymentId, {
+              description: `Medx Pharmacy - OrderId: ${data.orderId}`,
+            })
+            .then(async () => {
+              await stripe.paymentIntents.update(searchParams.paymentId, {
+                description: `Medx Pharmacy - OrderId: ${data.orderId}`,
+              });
+            })
+            .catch(async () => {
+              await stripe.paymentIntents.update(searchParams.paymentId, {
+                description: `Medx Pharmacy - OrderId: ${data.orderId}`,
+              });
+            });
+        } catch (error) {
+          console.log(error);
+        }
+
         TagManager.dataLayer({
           dataLayer: {
             event: "purchase",
@@ -42,36 +56,6 @@ const PaymentSuccess = ({ searchParams }) => {
               paymentIntent: searchParams?.payment_intent || "",
             },
           });
-
-          setTimeout(async function () {
-            const order = await getDoc(
-              doc(db, "orders", searchParams?.orderId)
-            );
-
-            const data = order.data();
-
-            if (!data.orderId) {
-              const metadata = await getDoc(
-                doc(db, "ordersMetaData", "metadata")
-              );
-
-              const lasorderId = (metadata.data().lastOrderId || 1001) + 1;
-
-              await Promise.all([
-                await stripe.paymentIntents.update(searchParams.paymentId, {
-                  description: `Medx Pharmacy - OrderId: ${lasorderId}`,
-                }),
-
-                await updateDoc(doc(db, "orders", searchParams?.orderId), {
-                  orderId: lasorderId,
-                }),
-
-                await updateDoc(doc(db, "ordersMetaData", "metadata"), {
-                  lastOrderId: lasorderId,
-                }),
-              ]);
-            }
-          }, 2000);
         }
       }
     }

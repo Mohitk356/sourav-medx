@@ -36,7 +36,6 @@ export const GET = async (req: NextRequest, { params }) => {
     );
   } catch (error) {
     console.log(error);
-
     return NextResponse.json({ error: error.toString() });
   }
 
